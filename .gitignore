@@ -1,0 +1,5 @@
+__pycache__
+.idea
+build
+canedge_browser.egg-info
+dist

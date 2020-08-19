@@ -5,19 +5,19 @@ from datetime import datetime, timezone
 
 def setup_fs():
     """Helper function to setup the file system for the examples.
-    
+
     :return: filesystem abstraction base path
     """
     from fsspec.implementations.local import LocalFileSystem
-    
+
     fs = LocalFileSystem()
-    
+
     return fs
 
 
 def setup_fs_s3():
     """Helper function demonstrating the required parameters to setup a remote S3 filesystem connection.
-    
+
     :return: filesystem abstraction base path
     """
     import s3fs
@@ -27,9 +27,10 @@ def setup_fs_s3():
         secret="<secret>",
         client_kwargs={
             "endpoint_url": "http://address.of.remote.s3.server:9000",
+            "verify": "path\\to\\public_cert.crt",
         },
     )
-    
+
     return fs
 
 
@@ -89,7 +90,7 @@ def example_list_files_for_devices_between_dates():
 if __name__ == "__main__":
     print("Listing all files for the selected devices:")
     example_list_all_files_for_devices()
-    
+
     print("")
     print("Listing files between two select dates:")
     example_list_files_for_devices_between_dates()

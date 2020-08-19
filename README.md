@@ -1,4 +1,4 @@
-# CANedge Browser - List Devices & Log Files (Local, S3 Server)
+# CANedge Browser - List Log Files (Local, S3)
 This package lets you easily list [CANedge](https://www.csselectronics.com/) CAN data log files. Simply specify the source (local disk or S3 server) and the start/stop period. The listed log files can then be used with other packages such as `mdf_iter` and `can_decoder`.
 
 ---
@@ -48,37 +48,19 @@ for log_file in log_files:
 ```
 
 ---
+
 ### Regarding timezone
 NOTE: All time inputs into the library must include a timezone. If in doubt, set this to UTC (+00:00).
 
 ---
+
 ### Regarding S3 server types
-The examples show how to connect to a MinIO S3 server. If you need to connect to e.g. an AWS S3 server, simply use the relevant endpoint (e.g. `https://s3.amazonaws.com`).
+If you need to connect to e.g. an AWS S3 server, simply use the relevant endpoint (e.g. `https://s3.amazonaws.com`). Similarly, for MinIO servers, you would use the relevant endpoint (e.g. `http://192.168.0.1:9000`).
+
+#### HTTP vs. HTTPS
+To connect to a MinIO S3 server where TLS is enabled via a self-signed certificate, you can connect by adding the path to your public certificate in the `verify` field in the `setup_fs_s3` function.
 
 ---
-### Connecting to a TLS-enabled MinIO S3 server 
-To connect to a MinIO S3 server where TLS is enabled via a self-signed certificate, you can connect via the syntax below:
 
-```
-fs = s3fs.S3FileSystem(
-    key="<key>",
-    secret="<secret>",
-    use_ssl=True,
-    client_kwargs={
-        "endpoint_url": "https://address.of.remote.s3.server:9000",
-        "verify": "path/to/cert.crt",
-    },
-)
-```
-
----
-### Using the local filesystem instead of S3.
-The `fsspec` package allows for a variety of filesystems to be used for storage, given that the structure of the files follows that of CANedge devices.
-
-For utilizing the local filesystem instead of S3, the following snippet can be used:
-```
-from fsspec.implementations.local import LocalFileSystem
-fs = LocalFileSystem()
-```
-
+### Regarding path syntax 
 Note that all paths are relative to the root `/`. For POSIX systems, this will likely follow the normal filesystem structure. Windows systems gets a slightly mangled syntax, such that `C:\Some folder\a subfolder\the target file.MF4` becomes `/C:/Some folder/a subfolder/the target file.MF4`.

@@ -1,13 +1,11 @@
 import bisect
-
 import fsspec
 
 from datetime import datetime, timezone
-from fsspec.implementations.local import LocalFileSystem
 from pathlib import Path
 from typing import List, Optional, Union
 
-from canedge_browser.FuncBackedList import FuncBackedList
+from canedge_browser.support.FuncBackedList import FuncBackedList
 
 
 def get_log_files(

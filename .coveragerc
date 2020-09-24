@@ -1,0 +1,10 @@
+[run]
+source =
+    canedge_browser
+    tests
+
+[paths]
+source =
+    src/canedge_browser
+    */site-packages/canedge_browser
+

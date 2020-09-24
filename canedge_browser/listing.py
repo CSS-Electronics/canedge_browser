@@ -50,6 +50,8 @@ def get_log_files(
     # If no path is passed, and the filesystem is local, assume current path.
     if isinstance(fs, fsspec.implementations.local.LocalFileSystem) and path is None:
         path = Path("__file__").parent.absolute()
+    else:
+        path = ""
     
     for i, device in enumerate(devices):
         devices[i] = "{}/{}".format(path, device)
@@ -138,7 +140,7 @@ def get_log_files(
                 bisect_list = FuncBackedList(extract_date, log_file_list)
             
                 if start_date is not None:
-                    start_index = bisect.bisect_left(bisect_list, start_date) - 1
+                    start_index = bisect.bisect_left(bisect_list, start_date)
                     if start_index < 0:
                         start_index = 0
                 
@@ -165,7 +167,7 @@ def get_log_files(
                 bisect_list = FuncBackedList(extract_date, log_file_list)
 
                 if start_date is not None:
-                    start_index = bisect.bisect_left(bisect_list, start_date) - 1
+                    start_index = bisect.bisect_left(bisect_list, start_date)
                     if start_index < 0:
                         start_index = 0
             

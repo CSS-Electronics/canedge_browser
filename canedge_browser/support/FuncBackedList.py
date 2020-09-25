@@ -7,11 +7,12 @@ class FuncBackedList(list):
     """List implementation, which generates values based on a backing function.
     
     """
-    def __init__(self, func: Callable, items: Optional[List[T]] = None):
+    def __init__(self, func: Callable, items: Optional[List[T]] = None, *args, **kwargs):
         self._keys = []
         self._values = []
         
-        self._func = func
+        # Create a wrapper function.
+        self._func = lambda x: func(x, *args, **kwargs)
         
         if self._func is None:
             raise ValueError("Func is not set")

@@ -1,5 +1,8 @@
 __pycache__
 .idea
+.tox
 build
 canedge_browser.egg-info
 dist
+htmlcov
+

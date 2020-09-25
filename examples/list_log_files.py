@@ -8,9 +8,10 @@ def setup_fs():
 
     :return: filesystem abstraction base path
     """
-    from fsspec.implementations.local import LocalFileSystem
+    from pathlib import Path
+    base_path = Path(__file__).parent / "LOG"
 
-    fs = LocalFileSystem()
+    fs = canedge_browser.LocalFileSystem(base_path=base_path)
 
     return fs
 
@@ -43,10 +44,10 @@ def example_list_all_files_for_devices():
     fs = setup_fs()
 
     devices = [
-        "LOG/EEEE0001",
-        "LOG/EEEE0002",
-        "LOG/EEEE0003",
-        "LOG/EEEE0004",
+        "EEEE0001",
+        "EEEE0002",
+        "EEEE0003",
+        "EEEE0004",
     ]
 
     log_files = canedge_browser.get_log_files(fs, devices)
@@ -67,10 +68,10 @@ def example_list_files_for_devices_between_dates():
     fs = setup_fs()
 
     devices = [
-        "LOG/EEEE0001",
-        "LOG/EEEE0002",
-        "LOG/EEEE0003",
-        "LOG/EEEE0004",
+        "EEEE0001",
+        "EEEE0002",
+        "EEEE0003",
+        "EEEE0004",
     ]
 
     start_date = datetime(year=2020, month=6, day=5, hour=10, tzinfo=timezone.utc)

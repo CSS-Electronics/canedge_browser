@@ -3,6 +3,11 @@ import canedge_browser
 from datetime import datetime, timezone
 
 
+# If overriding the default block size, use the following:
+# from canedge_browser import config
+# config.S3FS_DEFAULT_BLOCK_SIZE = 4096
+
+
 def setup_fs():
     """Helper function to setup the file system for the examples.
 

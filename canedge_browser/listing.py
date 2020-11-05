@@ -5,6 +5,8 @@ import functools
 from datetime import datetime, timezone
 from typing import List, Optional, Union, Callable, Set
 
+import canedge_browser.config as config
+
 from canedge_browser.support.FuncBackedList import FuncBackedList
 
 
@@ -187,7 +189,7 @@ def _get_objects_in_path(
 
 def _extract_date_wrapper(path: str, extract_date: Callable, fs: fsspec.AbstractFileSystem) -> datetime:
     # Use the supplied file path and filesystem to get a handle.
-    with fs.open(path, "rb") as handle:
+    with fs.open(path, "rb", block_size=config.S3FS_DEFAULT_BLOCK_SIZE, fill_cache=False) as handle:
         # Pass the handle to the wrapped extract date function.
         result = extract_date(handle)
     
@@ -209,8 +211,8 @@ def _extract_date_from_session_wrapper(
     session_log_files = _get_objects_in_path(fs, path, target_type="file", extensions=extensions)
     
     # Open the first valid file.
-    for file in session_log_files:
-        with fs.open(session_log_files[0], "rb") as handle:
+    if len(session_log_files) > 0:
+        with fs.open(session_log_files[0], "rb", block_size=config.S3FS_DEFAULT_BLOCK_SIZE, fill_cache=False) as handle:
             # Pass the handle to the wrapped extract date function.
             result = extract_date(handle)
     

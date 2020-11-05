@@ -89,8 +89,7 @@ def get_log_files(
             sorted_objects=sessions,
             lower_bound=start_date,
             upper_bound=stop_date,
-            extractor=extract_date_from_session_wrapper,
-            correction=1,
+            extractor=extract_date_from_session_wrapper
         )
         
         # For each session folder, list all matching files.
@@ -223,8 +222,7 @@ def _bisect_list(
         sorted_objects: List[str],
         extractor: Optional[Callable] = None,
         lower_bound: Optional[datetime] = None,
-        upper_bound: Optional[datetime] = None,
-        correction: int = 0,
+        upper_bound: Optional[datetime] = None
 ):
     """Search through all entries in a list, extracting those within the date range.
     
@@ -233,7 +231,6 @@ def _bisect_list(
                       arguments should be inserted using functools.partial or similar.
     :param lower_bound: Lower bound to find items above.
     :param upper_bound: Upper bound to find items below.
-    :param correction: How many spaces to move further out when bisecting.
     """
     # Populate default values.
     start_index = 0
@@ -245,13 +242,18 @@ def _bisect_list(
         
         # Only check for lower bound if present.
         if lower_bound is not None:
-            start_index = bisect.bisect_left(bisect_list, lower_bound) - correction
+            start_index = bisect.bisect_left(bisect_list, lower_bound)
+            
+            # Start index is the place to INSERT a value for it to be lower than the target. Thus, move one further out.
+            start_index -= 1
+            
             if start_index < 0:
                 start_index = 0
 
         # Only check for upper bound if present.
         if upper_bound is not None:
             stop_index = bisect.bisect_right(bisect_list, upper_bound)
+            # Start index is the place to INSERT a value for it to be higher than the target.
             if stop_index > len(sorted_objects):
                 stop_index = len(sorted_objects)
     

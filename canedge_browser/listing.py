@@ -10,6 +10,52 @@ import canedge_browser.config as config
 from canedge_browser.support.FuncBackedList import FuncBackedList
 
 
+def get_first_timestamp(
+        fs: fsspec.AbstractFileSystem,
+        path: str = "/",
+        file_extensions=None,
+        *args,
+        **kwargs) -> Optional[datetime]:
+    """With the given path, either look for the first file (if a folder) or get the timestamp directly (if a file).
+    
+    :keyword extract_date:      Function which takes a path to a log file and returns the timestamp of the first
+                                measurement.
+    
+    :param fs:                  Filesystem to operate on.
+    :param path:                Path to either file or folder to extract the first timestamp from.
+    :param file_extensions:     List of extensions to search for, ignoring case. Defaults to ["MF4"].
+    :return:                    The timestamp or None in case of error.
+    """
+    
+    # Sanity check.
+    if fs is None:
+        raise ValueError("fs cannot be None")
+    if path is None:
+        raise ValueError("path cannot be None")
+
+    # To avoid mutable default arguments.
+    if file_extensions is None:
+        file_extensions = ["MF4"]
+
+    # Ensure patterns a lower case
+    extensions = {ext.lower() for ext in file_extensions}
+
+    local_path = path
+    extract_date = kwargs.get("extract_date", _extract_date_mdf4)
+    
+    # If the input is a list, return a list.
+    if isinstance(path, list):
+        result = []
+        
+        for entry in path:
+            result.append(_extract_date_helper(fs, entry, extensions, extract_date))
+        
+    else:
+        result = _extract_date_helper(fs, path, extensions, extract_date)
+    
+    return result
+
+
 def get_log_files(
         fs: fsspec.AbstractFileSystem,
         devices: Union[List[str], str],
@@ -133,6 +179,26 @@ def get_log_files(
     return result
 
 
+def _extract_date_helper(fs, path, extensions, extract_date):
+    result = None
+
+    if fs.isdir(path):
+        # Get all log files sorted by name.
+        log_file_list = _get_objects_in_path(fs, path, target_type="file", extensions=extensions)
+    
+        if len(log_file_list) > 0:
+            path = log_file_list[0]
+        pass
+
+    if fs.isfile(path):
+        # Attempt to open the file using the mdf iterator.
+        with fs.open(path) as handle:
+            result = extract_date(handle)
+        pass
+    
+    return result
+    
+
 def _extract_date_mdf4(path):
     """Default extract date function
     
@@ -143,6 +209,7 @@ def _extract_date_mdf4(path):
     date_of_first_measurement = mdf_file.get_first_measurement()
     date_of_first_measurement = datetime.utcfromtimestamp(date_of_first_measurement * 1E-9)
     date_of_first_measurement = date_of_first_measurement.replace(tzinfo=timezone.utc)
+    
     return date_of_first_measurement
 
 

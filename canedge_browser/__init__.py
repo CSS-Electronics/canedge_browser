@@ -1,4 +1,4 @@
-from canedge_browser.listing import get_log_files
+from canedge_browser.listing import get_first_timestamp, get_log_files
 from canedge_browser.support.LocalFileSystem import LocalFileSystem
 import canedge_browser.config as config
 

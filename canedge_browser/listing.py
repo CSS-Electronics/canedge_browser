@@ -141,7 +141,7 @@ def get_log_files(
         # For each session folder, list all matching files.
         if len(selected_sessions) == 1:
             # Only a single session. Extract all files and bisect in the folder.
-            log_file_list = _get_objects_in_path(fs, selected_sessions[0])
+            log_file_list = _get_objects_in_path(fs, selected_sessions[0], target_type="file", extensions=extensions)
             result.extend(
                 _bisect_list(
                     sorted_objects=log_file_list,

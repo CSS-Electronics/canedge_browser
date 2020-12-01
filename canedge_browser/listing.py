@@ -154,13 +154,16 @@ def get_log_files(
             # The start and stop sessions does not overlap. Find the start in one, the end in the other and include all
             # entries in between. First, handle start session.
             log_file_list = _get_objects_in_path(fs, selected_sessions[0], target_type="file", extensions=extensions)
-            result.extend(
-                _bisect_list(
-                    sorted_objects=log_file_list,
-                    lower_bound=start_date,
-                    extractor=extract_date_wrapper
+            if len(log_file_list) == 1:
+                result.extend(log_file_list)
+            else:
+                result.extend(
+                    _bisect_list(
+                        sorted_objects=log_file_list,
+                        lower_bound=start_date,
+                        extractor=extract_date_wrapper
+                    )
                 )
-            )
             
             # Find all files in between.
             for session in selected_sessions[1:-1]:
@@ -168,13 +171,16 @@ def get_log_files(
 
             # Handle stop session.
             log_file_list = _get_objects_in_path(fs, selected_sessions[-1], target_type="file", extensions=extensions)
-            result.extend(
-                _bisect_list(
-                    sorted_objects=log_file_list,
-                    upper_bound=stop_date,
-                    extractor=extract_date_wrapper
+            if len(log_file_list) == 1:
+                result.extend(log_file_list)
+            else:
+                result.extend(
+                    _bisect_list(
+                        sorted_objects=log_file_list,
+                        upper_bound=stop_date,
+                        extractor=extract_date_wrapper
+                    )
                 )
-            )
     
     return result
 
@@ -311,16 +317,13 @@ def _bisect_list(
         if lower_bound is not None:
             start_index = bisect.bisect_left(bisect_list, lower_bound)
             
-            # Start index is the place to INSERT a value for it to be lower than the target. Thus, move one further out.
-            start_index -= 1
-            
-            if start_index < 0:
-                start_index = 0
+            if start_index != len(bisect_list) and start_index != 0:
+                start_index -= 1
 
         # Only check for upper bound if present.
         if upper_bound is not None:
             stop_index = bisect.bisect_right(bisect_list, upper_bound)
-            # Start index is the place to INSERT a value for it to be higher than the target.
+            
             if stop_index > len(sorted_objects):
                 stop_index = len(sorted_objects)
     

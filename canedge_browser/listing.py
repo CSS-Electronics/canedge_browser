@@ -181,8 +181,9 @@ def get_log_files(
                         extractor=extract_date_wrapper
                     )
                 )
-    
-    return result
+
+    # Assume the files have a counter in the file name, such that the sorted list is the correct ordering.
+    return sorted(result)
 
 
 def _extract_date_helper(fs, path, extensions, extract_date):
@@ -249,14 +250,18 @@ def _get_objects_in_path(
         result = []
         
         for entry in entries:
-            base, ext = entry.rsplit(".", 1)
+            try:
+                base, ext = entry.rsplit(".", 1)
+            except ValueError:
+                continue
 
             if ext.lower() not in extensions:
                 continue
             
             result.append(entry)
-        
-    return result
+    
+    # Assume the files have a counter in the file name, such that the sorted list is the correct ordering.
+    return sorted(result)
     
 
 def _extract_date_wrapper(path: str, extract_date: Callable, fs: fsspec.AbstractFileSystem) -> datetime:

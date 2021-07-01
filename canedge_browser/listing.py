@@ -318,11 +318,11 @@ def _bisect_list(
     if extractor is not None and callable(extractor):
         bisect_list = FuncBackedList(extractor, sorted_objects)
         
-        # Only check for lower bound if present.
-        if lower_bound is not None:
+        # Only check for lower bound if present and the number of objects is larger than 1.
+        if lower_bound is not None and len(sorted_objects) > 1:
             start_index = bisect.bisect_left(bisect_list, lower_bound)
             
-            if start_index != len(bisect_list) and start_index != 0:
+            if start_index != 0:
                 start_index -= 1
 
         # Only check for upper bound if present.

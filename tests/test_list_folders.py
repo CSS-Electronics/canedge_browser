@@ -289,14 +289,18 @@ class TestListLogFiles(object):
         return
 
     def test_get_log_files_with_start_date_limiting_c(self, fs):
-        """Test no files are returned when the start date is outside the end of the range.
+        """Test a single file is returned when the start date is outside the end of the range.
         """
         devices = ["EEEE0001"]
         start_date = datetime(year=2021, month=6, day=5, hour=0, tzinfo=timezone.utc)
+
+        expected_files = {
+            "/EEEE0001/00000005/00001025.MF4",
+        }
     
         result = canedge_browser.get_log_files(fs, devices, start_date=start_date)
     
-        assert len(result) == 0
+        assert set(result) == expected_files
         return
 
     def test_get_log_files_with_stop_date(self, fs):
@@ -424,15 +428,19 @@ class TestListLogFiles(object):
         return
 
     def test_get_log_files_with_start_and_stop_date_limiting_c(self, fs):
-        """Test only a subset of files are returned when the start and stop dates are outside the range.
+        """Test only a single file (the last file) is returned when the start and stop dates are outside the range.
         """
         devices = ["EEEE0001"]
         start_date = datetime(year=2022, month=6, day=5, hour=0, tzinfo=timezone.utc)
         stop_date = datetime(year=2023, month=8, day=29, hour=7, tzinfo=timezone.utc)
-    
+        
+        expected_files = {
+            "/EEEE0001/00000005/00001025.MF4",
+        }
+        
         result = canedge_browser.get_log_files(fs, devices, start_date=start_date, stop_date=stop_date)
     
-        assert len(result) == 0
+        assert set(result) == expected_files
         return
 
     def test_get_log_files_with_start_and_stop_date_limiting_d(self, fs):

@@ -40,7 +40,7 @@ class TestLocalFileSystem(object):
             "/folder",
         }
         
-        result = uut.ls("")
+        result = uut.ls("", detail=True)
         
         extracted_names = set()
         for entry in result:

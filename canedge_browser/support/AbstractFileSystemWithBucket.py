@@ -14,6 +14,8 @@ class AbstractFileSystemWithBucket(fsspec.AbstractFileSystem):
         super().__init__(*args, **storage_options)
         self.protocol = protocol
         
+        self._paths_with_leading_slash = storage_options.get("paths_with_leading_slash", False)
+        
         # Use the corresponding filesystem under the hood.
         self._fs = fsspec.filesystem(protocol=protocol, **storage_options)  # type: fsspec.AbstractFileSystem
 
@@ -72,6 +74,9 @@ class AbstractFileSystemWithBucket(fsspec.AbstractFileSystem):
         
         # Append a leading slash and present to the user as a POSIX path.
         translated_path = relative_path.as_posix()
+        
+        if self._paths_with_leading_slash:
+            translated_path = "/" + translated_path
     
         return translated_path
     

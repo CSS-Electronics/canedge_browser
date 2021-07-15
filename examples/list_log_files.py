@@ -16,7 +16,7 @@ def setup_fs():
     from pathlib import Path
     base_path = Path(__file__).parent / "LOG"
 
-    fs = canedge_browser.LocalFileSystem(base_path=base_path)
+    fs = canedge_browser.RelativeFileSystem(protocol="file", base_path=base_path)
 
     return fs
 

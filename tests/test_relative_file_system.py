@@ -32,7 +32,7 @@ class TestLocalFileSystemWithBucket(object):
     @pytest.fixture()
     def uut(self, setup_folders):
         
-        return canedge_browser.AbstractFileSystemWithBucket(protocol="file", base_path=setup_folders)
+        return canedge_browser.RelativeFileSystem(protocol="file", base_path=setup_folders)
     
     def test_ls_with_details(self, uut):
         expected_names = {

@@ -1,7 +1,7 @@
-from canedge_browser.support.AbstractFileSystemWithBucket import AbstractFileSystemWithBucket
+from canedge_browser.support.RelativeFileSystem import RelativeFileSystem
 
 
-class LocalFileSystem(AbstractFileSystemWithBucket):
+class LocalFileSystem(RelativeFileSystem):
     """LocalFileSystem implements a subset of the AbstractFileSystem from fsspec, such that all calls are forwarded to
     the implementation from fsspec, but with another root dir.
     

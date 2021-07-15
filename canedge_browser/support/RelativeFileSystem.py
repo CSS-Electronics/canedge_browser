@@ -6,8 +6,8 @@ from pathlib import Path, PurePath
 from typing import Union
 
 
-class AbstractFileSystemWithBucket(fsspec.AbstractFileSystem):
-    """Path(translated_path) implements a subset of the AbstractFileSystem from fsspec, such that all calls are
+class RelativeFileSystem(fsspec.AbstractFileSystem):
+    """RelativeFileSystem implements a subset of the AbstractFileSystem from fsspec, such that all calls are
     forwarded to the implementation from fsspec, but with another root dir.
     
     """

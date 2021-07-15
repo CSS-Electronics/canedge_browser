@@ -1,3 +1,5 @@
+import copy
+
 import fsspec
 
 from pathlib import Path, PurePath
@@ -34,6 +36,10 @@ class AbstractFileSystemWithBucket(fsspec.AbstractFileSystem):
         result = self._fs.ls(path, **kwargs)
         
         if detail:
+            # NOTE: Since the paths are changed and the objects are shared globally, it is imperative that the objects
+            #       are copied before any changed are made, else the internal state/cache of the fs can contaminated.
+            result = copy.deepcopy(result)
+            
             # List of dictionary objects. Entries can be replaces within the dictionary.
             for entry in result:
                 entry["name"] = self._translate_path_reverse(entry["name"])

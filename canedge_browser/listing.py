@@ -1,6 +1,7 @@
 import bisect
 import fsspec
 import functools
+import re
 
 from datetime import datetime, timezone
 from typing import List, Optional, Union, Callable, Set
@@ -142,6 +143,7 @@ def get_log_files(
         if len(selected_sessions) == 1:
             # Only a single session. Extract all files and bisect in the folder.
             log_file_list = _get_objects_in_path(fs, selected_sessions[0], target_type="file", extensions=extensions)
+            log_file_list = _ignore_duplicate_log_files(log_file_list)
             result.extend(
                 _bisect_list(
                     sorted_objects=log_file_list,
@@ -154,6 +156,7 @@ def get_log_files(
             # The start and stop sessions does not overlap. Find the start in one, the end in the other and include all
             # entries in between. First, handle start session.
             log_file_list = _get_objects_in_path(fs, selected_sessions[0], target_type="file", extensions=extensions)
+            log_file_list = _ignore_duplicate_log_files(log_file_list)
             if len(log_file_list) == 1:
                 result.extend(log_file_list)
             else:
@@ -167,10 +170,13 @@ def get_log_files(
             
             # Find all files in between.
             for session in selected_sessions[1:-1]:
-                result.extend(_get_objects_in_path(fs, session, target_type="file", extensions=extensions))
+                log_file_list = _get_objects_in_path(fs, session, target_type="file", extensions=extensions)
+                log_file_list = _ignore_duplicate_log_files(log_file_list)
+                result.extend(log_file_list)
 
             # Handle stop session.
             log_file_list = _get_objects_in_path(fs, selected_sessions[-1], target_type="file", extensions=extensions)
+            log_file_list = _ignore_duplicate_log_files(log_file_list)
             if len(log_file_list) == 1:
                 result.extend(log_file_list)
             else:
@@ -333,3 +339,38 @@ def _bisect_list(
                 stop_index = len(sorted_objects)
     
     return sorted_objects[start_index:stop_index]
+
+
+_re_expression = re.compile(r"^/?[0-9a-fA-F]{8}/[0-9a-fA-F]{8}/(?P<Split>[0-9a-fA-F]{8})-?(?P<Time>[0-9a-fA-F]{8})?.*$")
+
+
+def _ignore_duplicate_log_files(files: List[str]) -> List[str]:
+    """Given a list of log files, extract any additional data and oly return the first entry in each set.
+    """
+    kv_map = {}
+    result = []
+    
+    for entry in files:
+        m = _re_expression.match(entry)
+        
+        if m is None:
+            # Special file which does not match our expected format. Include it as is, in case this is a custom file
+            # from the end user.
+            result.append(entry)
+            continue
+            
+        split = m.groupdict().get("Split")
+        
+        if split is None:
+            continue
+
+        if split not in kv_map.keys():
+            kv_map[split] = [entry]
+        else:
+            kv_map[split].append(entry)
+    
+    for value in kv_map.values():
+        sorted_entries = sorted(value)
+        result.append(sorted_entries[0])
+    
+    return sorted(result)

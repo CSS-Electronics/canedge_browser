@@ -472,4 +472,21 @@ class TestListLogFiles(object):
         assert set(result) == expected_files
         return
     
+    def test_get_log_files_single_device_as_list_ignores_duplicate(self, fs):
+        """With a single valid device passed as a list, ensure that the expected log files are returned.
+        """
+        devices = ["EEEE0005"]
+
+        expected_files = {
+            "/EEEE0005/00000001/00000001-AB000001.MF4",
+            "/EEEE0005/00000002/00000257-AC000001.MF4",
+            "/EEEE0005/00000003/00000513-CF000003.MF4",
+            "/EEEE0005/00000004/00000769-CE123456.MF4",
+        }
+
+        result = canedge_browser.get_log_files(fs, devices)
+
+        assert set(result) == expected_files
+        return
+    
     pass

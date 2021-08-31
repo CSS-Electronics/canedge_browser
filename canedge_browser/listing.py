@@ -4,7 +4,7 @@ import functools
 import re
 
 from datetime import datetime, timezone
-from typing import List, Optional, Union, Callable, Set
+from typing import List, Optional, Union, Callable, Set, Dict
 
 import canedge_browser.config as config
 
@@ -24,7 +24,9 @@ def get_first_timestamp(
     
     :param fs:                  Filesystem to operate on.
     :param path:                Path to either file or folder to extract the first timestamp from.
-    :param file_extensions:     List of extensions to search for, ignoring case. Defaults to ["MF4"].
+    :param file_extensions:     List of extensions to search for, ignoring case. Defaults to ["MF4", "MFC"] unless
+                                passwords are supplied, in which case it is extended with ["MFE", "MFM"].
+    :keyword passwords:         Optional list of passwords to use with encrypted files
     :return:                    The timestamp or None in case of error.
     """
     
@@ -41,18 +43,21 @@ def get_first_timestamp(
     # Ensure patterns a lower case
     extensions = {ext.lower() for ext in file_extensions}
 
-    local_path = path
+    # Allow for custom date extraction.
     extract_date = kwargs.get("extract_date", _extract_date_mdf4)
+
+    # Optionally allow for passwords to be supplied.
+    passwords = kwargs.get("passwords", {})
     
     # If the input is a list, return a list.
     if isinstance(path, list):
         result = []
         
         for entry in path:
-            result.append(_extract_date_helper(fs, entry, extensions, extract_date))
+            result.append(_extract_date_helper(fs, entry, extensions, extract_date, passwords))
         
     else:
-        result = _extract_date_helper(fs, path, extensions, extract_date)
+        result = _extract_date_helper(fs, path, extensions, extract_date, passwords)
     
     return result
 
@@ -73,11 +78,13 @@ def get_log_files(
     :keyword stop_date:         Optional stop date to select files up to.
     :keyword extract_date:      Function which takes a path to a log file and returns the timestamp of the first
                                 measurement.
+    :keyword passwords:         Optional list of passwords to use with encrypted files
     
     :param fs:                  Filesystem to extract data through.
     :param devices:             Single device or list of devices to find log files for. Requires the full path.
     :param path:                Path to prepend on all the devices.
-    :param file_extensions:     List of extensions to search for, ignoring case. Defaults to ["MF4"].
+    :param file_extensions:     List of extensions to search for, ignoring case. Defaults to ["MF4", "MFC"] unless
+                                passwords are supplied, in which case it is extended with ["MFE", "MFM"].
     :return:                    List of log file paths.
     """
     # Validate input.
@@ -85,13 +92,6 @@ def get_log_files(
         raise ValueError("Expected a filesystem instance to work on")
     elif not isinstance(fs, fsspec.AbstractFileSystem):
         raise TypeError("Passed filesystem does not implement fsspec.AbstractFileSystem")
-    
-    # To avoid mutable default arguments.
-    if file_extensions is None:
-        file_extensions = ["MF4"]
-    
-    # Ensure patterns a lower case
-    extensions = {ext.lower() for ext in file_extensions}
     
     # Determine if the input is a single argument or a list.
     if devices is None:
@@ -107,19 +107,36 @@ def get_log_files(
     # If the required arguments are supplied, enable support for searching between dates.
     start_date = kwargs.get("start_date", None)
     stop_date = kwargs.get("stop_date", None)
+    
+    # Allow for custom date extraction.
     extract_date = kwargs.get("extract_date", _extract_date_mdf4)
+    
+    # Optionally allow for passwords to be supplied.
+    passwords = kwargs.get("passwords", {})
+
+    # To avoid mutable default arguments.
+    if file_extensions is None:
+        file_extensions = ["MF4", "MFC"]
+        
+        if len(passwords) != 0:
+            file_extensions.extend(["MFE", "MFM"])
+
+    # Ensure patterns a lower case
+    extensions = {ext.lower() for ext in file_extensions}
     
     # Wrap the extractor such that it receives a file handle.
     extract_date_wrapper = functools.partial(
         _extract_date_wrapper,
         extract_date=extract_date,
         fs=fs,
+        passwords=passwords,
     )
     extract_date_from_session_wrapper = functools.partial(
         _extract_date_from_session_wrapper,
         extract_date=extract_date,
         fs=fs,
         extensions=extensions,
+        passwords=passwords,
     )
     
     result = []
@@ -192,7 +209,7 @@ def get_log_files(
     return sorted(result)
 
 
-def _extract_date_helper(fs, path, extensions, extract_date):
+def _extract_date_helper(fs, path, extensions, extract_date, passwords):
     result = None
 
     if fs.isdir(path):
@@ -206,19 +223,23 @@ def _extract_date_helper(fs, path, extensions, extract_date):
     if fs.isfile(path):
         # Attempt to open the file using the mdf iterator.
         with fs.open(path) as handle:
-            result = extract_date(handle)
+            result = extract_date(handle, passwords)
         pass
     
     return result
     
 
-def _extract_date_mdf4(path):
+def _extract_date_mdf4(*args):
     """Default extract date function
     
     """
     import mdf_iter
     
-    mdf_file = mdf_iter.MdfFile(path)
+    try:
+        mdf_file = mdf_iter.MdfFile(*args)
+    except RuntimeError:
+        raise RuntimeError(f"Could not load object {args[0]}. If the file is encrypted, ensure the correct password is supplied")
+    
     date_of_first_measurement = mdf_file.get_first_measurement()
     date_of_first_measurement = datetime.utcfromtimestamp(date_of_first_measurement * 1E-9)
     date_of_first_measurement = date_of_first_measurement.replace(tzinfo=timezone.utc)
@@ -270,11 +291,15 @@ def _get_objects_in_path(
     return sorted(result)
     
 
-def _extract_date_wrapper(path: str, extract_date: Callable, fs: fsspec.AbstractFileSystem) -> datetime:
+def _extract_date_wrapper(
+        path: str,
+        extract_date: Callable,
+        fs: fsspec.AbstractFileSystem,
+        passwords: Dict[str, str]) -> datetime:
     # Use the supplied file path and filesystem to get a handle.
     with fs.open(path, "rb", block_size=config.S3FS_DEFAULT_BLOCK_SIZE, fill_cache=False) as handle:
         # Pass the handle to the wrapped extract date function.
-        result = extract_date(handle)
+        result = extract_date(handle, passwords)
     
     return result
 
@@ -283,8 +308,8 @@ def _extract_date_from_session_wrapper(
         path: str,
         extract_date: Callable,
         fs: fsspec.AbstractFileSystem,
-        extensions: Set[str]
-) -> datetime:
+        extensions: Set[str],
+        passwords: Dict[str, str]) -> datetime:
     result = datetime.utcfromtimestamp(0).replace(tzinfo=timezone.utc)
     
     # Ensure all the extensions are lowercase.
@@ -297,7 +322,7 @@ def _extract_date_from_session_wrapper(
     if len(session_log_files) > 0:
         with fs.open(session_log_files[0], "rb", block_size=config.S3FS_DEFAULT_BLOCK_SIZE, fill_cache=False) as handle:
             # Pass the handle to the wrapped extract date function.
-            result = extract_date(handle)
+            result = extract_date(handle, passwords)
     
     return result
 
